@@ -201,7 +201,7 @@ void periodTick() {
       pump_timers[i] = millis();
       now_pumping = true;
       lcd.setCursor(10, 0);                           // вывод текущей операции на экран
-      lcd.print("г.вода #" + String(i));
+      lcd.print("г.вода #" + String(i + 1));
       // Serial.println("dry clapan ON");
       //Serial.println("clear clapan" + " OFF");
       // Serial.println("Pump #" + String(i) + " ON");
@@ -215,7 +215,7 @@ void periodTick() {
       dryState = false;                              // флаг грязной воды снять
       digitalWrite(PUMP_PIN1, SWITCH_LEVEL);         // включить чистую воду
       lcd.setCursor(10, 0);                          // вывод текущей операции на экран
-      lcd.print("ч.вода #" + String(i));
+      lcd.print("ч.вода #" + String(i + 1));
       // Serial.println("dry clapan OFF");
       // Serial.println("clear clapan ON");
     }
