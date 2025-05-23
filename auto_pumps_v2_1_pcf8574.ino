@@ -119,7 +119,7 @@ void setup() {
   digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);        // выключаем от греха реле переключения воды
 
   // --------------------- ИНИЦИАЛИЗИРУЕМ ЖЕЛЕЗО ---------------------
-  Serial.begin(9600);
+  // Serial.begin(9600);
 
   lcd.init();
   lcd.backlight();
@@ -200,9 +200,11 @@ void periodTick() {
       else                  pcf8574_b.digitalWrite(pump_pins[i] - 8, SWITCH_LEVEL);
       pump_timers[i] = millis();
       now_pumping = true;
-      Serial.println("dry clapan ON");
+      lcd.setCursor(10, 0);                           // вывод текущей операции на экран
+      lcd.print("г.вода #" + String(i));
+      // Serial.println("dry clapan ON");
       //Serial.println("clear clapan" + " OFF");
-      Serial.println("Pump #" + String(i) + " ON");
+      // Serial.println("Pump #" + String(i) + " ON");
     }
     // переключение воды с грязной на чистую
      if (period_time[i] > 0                          // если помпа качает и счетчик больше чем period_time
@@ -212,8 +214,10 @@ void periodTick() {
       digitalWrite(PUMP_PIN, !SWITCH_LEVEL);         // выключить грязную воду
       dryState = false;                              // флаг грязной воды снять
       digitalWrite(PUMP_PIN1, SWITCH_LEVEL);         // включить чистую воду
-      Serial.println("dry clapan OFF");
-      Serial.println("clear clapan ON");
+      lcd.setCursor(10, 0);                          // вывод текущей операции на экран
+      lcd.print("ч.вода #" + String(i));
+      // Serial.println("dry clapan OFF");
+      // Serial.println("clear clapan ON");
     }
     // добавлено к гайверу
   }
@@ -232,8 +236,10 @@ void flowTick() {
       if (TIMER_START) pump_timers[i] = millis();
       now_pumping = false;
       pump_finished[i] = true;
-      Serial.println("clear clapan OFF");
-      Serial.println("Pump #" + String(i) + " OFF");
+      lcd.setCursor(10, 0);                                                       // очистка текущей операции на экране
+      lcd.print("          ");
+      // Serial.println("clear clapan OFF");
+      // Serial.println("Pump #" + String(i) + " OFF");
     }
   }
 }
@@ -342,11 +348,11 @@ void changeSet() {
   }
   lcd.setCursor(0, 1);
   if (current_set < 4) {
-    lcd.print(L"ПАУЗА ");
+    lcd.print(L"г.ВОДА");
     s_to_hms(period_time[current_pump]);
   }
   else {
-    lcd.print(L"РАБОТА");
+    lcd.print(L"ПОЛИВ ");
     s_to_hms(pumping_time[current_pump]);
   }
   lcd.setCursor(8, 1);
