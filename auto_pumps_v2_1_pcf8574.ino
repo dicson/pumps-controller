@@ -223,8 +223,8 @@ void periodTick() {
   }
 }
 
-void flowTick() {
-  for (byte i = 0; i < PUPM_AMOUNT; i++) {            // пробегаем по всем помпам
+void flowTick() {                                                                // выключение зоны
+  for (byte i = 0; i < PUPM_AMOUNT; i++) {                                       // пробегаем по всем помпам
     if (pumping_time[i] > 0
         && millis() - pump_timers[i] >= pumping_time[i] * 1000
         && (pump_state[i] == SWITCH_LEVEL) ) {
@@ -238,8 +238,16 @@ void flowTick() {
       pump_finished[i] = true;
       lcd.setCursor(10, 0);                                                       // очистка текущей операции на экране
       lcd.print("          ");
-      // Serial.println("clear clapan OFF");
-      // Serial.println("Pump #" + String(i) + " OFF");
+      // -----------------------------------------проверка на конец заданий--------------------------------------------
+      for (byte n = 0; n < PUPM_AMOUNT; n++) {                                    // пробегаем по всем помпам
+        if ((n == PUPM_AMOUNT -1)                                                 // если неполитых зон не осталоь
+          && ((pump_finished[n] && pumping_time[n] > 0)
+          || pumping_time[n] == 0)) {
+          lcd.setCursor(10, 0);                                                   // вывод сообщения на экран на экран
+          lcd.print("Finished  ");
+          }
+      }
+      // ---------------------------------------------------------------------------------------------------------------                  
     }
   }
 }
