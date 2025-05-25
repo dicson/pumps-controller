@@ -74,9 +74,9 @@ Encoder enc1(CLK, DT, SW);
 // -------- АВТОВЫБОР ОПРЕДЕЛЕНИЯ ДИСПЛЕЯ-------------
 // Если кончается на 4Т - это 0х27. Если на 4АТ - 0х3f
 #if (DRIVER_VERSION)
-LCD_1602_RUS lcd(0x27, 16, 2);
+LCD_1602_RUS lcd(0x27, 20, 4);
 #else
-LCD_1602_RUS lcd(0x3f, 16, 2);
+LCD_1602_RUS lcd(0x3f, 20, 4);
 #endif
 // -------- АВТОВЫБОР ОПРЕДЕЛЕНИЯ ДИСПЛЕЯ-------------
 
@@ -201,7 +201,7 @@ void periodTick() {
       pump_timers[i] = millis();
       now_pumping = true;
       lcd.setCursor(10, 0);                           // вывод текущей операции на экран
-      lcd.print("г.вода #" + String(i + 1));
+      lcd.print("1-H20  #" + String(i + 1));
       // Serial.println("dry clapan ON");
       //Serial.println("clear clapan" + " OFF");
       // Serial.println("Pump #" + String(i) + " ON");
@@ -215,7 +215,7 @@ void periodTick() {
       dryState = false;                              // флаг грязной воды снять
       digitalWrite(PUMP_PIN1, SWITCH_LEVEL);         // включить чистую воду
       lcd.setCursor(10, 0);                          // вывод текущей операции на экран
-      lcd.print("ч.вода #" + String(i + 1));
+      lcd.print("2-H20  #" + String(i + 1));
       // Serial.println("dry clapan OFF");
       // Serial.println("clear clapan ON");
     }
@@ -323,7 +323,7 @@ void changeSettings(int increment) {
 // вывести название реле
 void drawLabels() {
   lcd.setCursor(1, 0);
-  lcd.print("                ");
+  lcd.print("         ");
   lcd.setCursor(1, 0);
   lcd.print(relayNames[current_pump]);
 }
