@@ -116,7 +116,6 @@ void setup() {
   pinMode(PUMP_PIN1, OUTPUT);
   digitalWrite(WATER_PUMP, !SWITCH_LEVEL);         
   digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);        // выключаем от греха реле переключения воды
-  zoneTimer = millis() - ZONE_TOUT * 1000;       // убираем паузу перед запуском полива
 
   // --------------------- ИНИЦИАЛИЗИРУЕМ ЖЕЛЕЗО ---------------------
   // Serial.begin(9600);
@@ -263,6 +262,7 @@ void flowTick() {                                                               
 void encoderTick() {
   enc1.tick();    // отработка энкодера
   if (enc1.isDouble()) { // двойной клик
+    zoneTimer = millis() - ZONE_TOUT * 1000;            // убираем паузу перед запуском полива
     digitalWrite(WATER_PUMP, SWITCH_LEVEL);             // включить насос
     for (byte i = 0; i < PUPM_AMOUNT; i++) {            // пробегаем по всем помпам
       pump_finished[i] = false;                         // сброс переменных политых зон(старт полива) 
