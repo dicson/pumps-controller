@@ -31,8 +31,8 @@
 #define PARALLEL 0          // 1 - параллельный полив, 0 - полив в порядке очереди
 #define TIMER_START 1       // 1 - отсчёт периода с момента ВЫКЛЮЧЕНИЯ помпы, 0 - с момента ВКЛЮЧЕНИЯ помпы
 
-#define PUMP_PIN 4        // это реле, ведущее на грязную воду помпу
-#define PUMP_PIN1 5       // это реле, ведущее на чистую воду помпу
+#define WATER_PUMP 4        // это реле, ведущее на насос
+#define PUMP_PIN1 5         // это реле, ведущее на чистую воду помпу
 
 
 // названия каналов управления. БУКВУ L НЕ ТРОГАТЬ БЛЕТ!!!!!!
@@ -59,7 +59,7 @@ static const wchar_t *relayNames[]  = {
 #define DT 2
 #define SW 0
 
-#include "PCF8574.h"               // Подключение библиотеки PCF8574
+#include "PCF8574.h"                // Подключение библиотеки PCF8574
 PCF8574 pcf8574_a(0x20);            // Создаем объект и указываем адрес устройства 0x20
 PCF8574 pcf8574_b(0x21);            // Создаем объект и указываем адрес устройства 0x21
 
@@ -101,21 +101,18 @@ boolean dryState = false;   // какой клапан открыт. true - dry(
 
 
 void setup() {
-  // pcf8574_a.begin();         //  инициализация библиотеки pcf8574
-  // pcf8574_b.begin();
-  // delay(50);                 // Необходимо время для инициализации
   // --------------------- КОНФИГУРИРУЕМ ПИНЫ ---------------------
   for (byte i = 0; i < PUPM_AMOUNT; i++) {            // пробегаем по всем помпам
     pump_pins[i] = START_PIN + i;                     // настраиваем массив пинов
     if (pump_pins[i] < 8) {pcf8574_a.pinMode(START_PIN + i, OUTPUT);                  // настраиваем пины
                           pcf8574_a.digitalWrite(START_PIN + i, !SWITCH_LEVEL);}
     else                  {pcf8574_b.pinMode(START_PIN + i - 8, OUTPUT);                   
-                          pcf8574_b.digitalWrite(START_PIN + i - 8, !SWITCH_LEVEL);}       // выключаем от греха
+                          pcf8574_b.digitalWrite(START_PIN + i - 8, !SWITCH_LEVEL);}  // выключаем от греха
     pump_finished[i] = true;
   }
-  pinMode(PUMP_PIN, OUTPUT);
+  pinMode(WATER_PUMP, OUTPUT);
   pinMode(PUMP_PIN1, OUTPUT);
-  digitalWrite(PUMP_PIN, !SWITCH_LEVEL);         
+  digitalWrite(WATER_PUMP, !SWITCH_LEVEL);         
   digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);        // выключаем от греха реле переключения воды
 
   // --------------------- ИНИЦИАЛИЗИРУЕМ ЖЕЛЕЗО ---------------------
@@ -197,7 +194,7 @@ void periodTick() {
          && !(now_pumping * !PARALLEL)) {
       pump_state[i] = SWITCH_LEVEL;
       if (!dryState)
-          digitalWrite(PUMP_PIN, SWITCH_LEVEL);       // включить грязную воду
+          digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);     // включить грязную воду
       dryState = true;                                // флаг грязной воды поднять
       if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], SWITCH_LEVEL);
       else                  pcf8574_b.digitalWrite(pump_pins[i] - 8, SWITCH_LEVEL);
@@ -211,7 +208,7 @@ void periodTick() {
          &&millis() - pump_timers[i] >= period_time[i] * 1000
          && (pump_state[i] == SWITCH_LEVEL)
          && (dryState)) {
-      digitalWrite(PUMP_PIN, !SWITCH_LEVEL);         // выключить грязную воду
+      //digitalWrite(WATER_PUMP, !SWITCH_LEVEL);         // выключить грязную воду
       dryState = false;                              // флаг грязной воды снять
       if (period_time[i] < pumping_time[i]) {        // если время грязной воды меньше времени полива
           digitalWrite(PUMP_PIN1, SWITCH_LEVEL);     // включить чистую воду
@@ -230,7 +227,7 @@ void flowTick() {                                                               
         && (pump_state[i] == SWITCH_LEVEL) ) {
       pump_state[i] = !SWITCH_LEVEL;
       digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);                                    // выключить чистую воду
-      digitalWrite(PUMP_PIN, !SWITCH_LEVEL);                                     // выключить грязную воду
+      //digitalWrite(PUMP_PIN, !SWITCH_LEVEL);                                     // выключить грязную воду
       if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], !SWITCH_LEVEL); // выключить зону
       else                  pcf8574_b.digitalWrite(pump_pins[i] - 8, !SWITCH_LEVEL);
       if (TIMER_START) pump_timers[i] = millis();
@@ -245,6 +242,7 @@ void flowTick() {                                                               
         if (n==PUPM_AMOUNT - 1) {                                                 // если проверили весь список и  не нашли не политых
           lcd.setCursor(10, 0);                                                   // вывод сообщения на экран
           lcd.print("Finished  ");
+          digitalWrite(WATER_PUMP, !SWITCH_LEVEL);                                  // выключить насос
           }
       }
       // ---------------------------------------------------------------------------------------------------------------                  
@@ -261,13 +259,14 @@ void flowTick() {                                                               
 void encoderTick() {
   enc1.tick();    // отработка энкодера
   if (enc1.isDouble()) { // двойной клик
+    digitalWrite(WATER_PUMP, SWITCH_LEVEL);             // включить насос
     for (byte i = 0; i < PUPM_AMOUNT; i++) {            // пробегаем по всем помпам
       pump_finished[i] = false;                         // сброс переменных политых зон(старт полива) 
   }
   }
-  if (enc1.isTurn()) {                               // если был совершён поворот
+  if (enc1.isTurn()) {                                  // если был совершён поворот
     if (backlState) {
-      backlTimer = millis();      // сбросить таймаут дисплея
+      backlTimer = millis();                            // сбросить таймаут дисплея
       if (enc1.isRight()) {
         if (++current_set >= 7) current_set = 6;
       } else if (enc1.isLeft()) {
