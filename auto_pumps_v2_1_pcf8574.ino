@@ -33,6 +33,7 @@
 
 #define WATER_PUMP 4        // это реле, ведущее на насос
 #define PUMP_PIN1 5         // это реле, ведущее на чистую воду помпу
+#define ZONE_TOUT 10        // таймаут между поливом зон, секунды
 
 
 // названия каналов управления. БУКВУ L НЕ ТРОГАТЬ БЛЕТ!!!!!!
@@ -92,6 +93,7 @@ int8_t current_pump;
 boolean now_pumping;
 boolean backlState = true;
 uint32_t backlTimer;
+uint32_t zoneTimer;
 
 
 int8_t thisH, thisM, thisS;
@@ -114,6 +116,7 @@ void setup() {
   pinMode(PUMP_PIN1, OUTPUT);
   digitalWrite(WATER_PUMP, !SWITCH_LEVEL);         
   digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);        // выключаем от греха реле переключения воды
+  zoneTimer = millis() - ZONE_TOUT * 1000;       // убираем паузу перед запуском полива
 
   // --------------------- ИНИЦИАЛИЗИРУЕМ ЖЕЛЕЗО ---------------------
   // Serial.begin(9600);
@@ -189,6 +192,7 @@ void periodTick() {
         //  && millis() - pump_timers[i] >= period_time[i] * 1000 
         // если раскоментить то задания запускаются не по порядку,а в зависимости от времени грязой воды
         // меньше время - быстрее старт(можно реализовать приоритет зон)
+         && millis() - zoneTimer >= ZONE_TOUT * 1000  // если пауза закончилась
          && (pump_state[i] != SWITCH_LEVEL)
          &&  !pump_finished[i]                        // если зона уже поливалась - пропускаем 
          && !(now_pumping * !PARALLEL)) {
@@ -208,7 +212,6 @@ void periodTick() {
          &&millis() - pump_timers[i] >= period_time[i] * 1000
          && (pump_state[i] == SWITCH_LEVEL)
          && (dryState)) {
-      //digitalWrite(WATER_PUMP, !SWITCH_LEVEL);         // выключить грязную воду
       dryState = false;                              // флаг грязной воды снять
       if (period_time[i] < pumping_time[i]) {        // если время грязной воды меньше времени полива
           digitalWrite(PUMP_PIN1, SWITCH_LEVEL);     // включить чистую воду
@@ -232,9 +235,10 @@ void flowTick() {                                                               
       else                  pcf8574_b.digitalWrite(pump_pins[i] - 8, !SWITCH_LEVEL);
       if (TIMER_START) pump_timers[i] = millis();
       now_pumping = false;
+      zoneTimer = millis();                                                       // обнуляем таймер паузы между зонами
       pump_finished[i] = true;
       lcd.setCursor(10, 0);                                                       // очистка текущей операции на экране
-      lcd.print("          ");
+      lcd.print("PAUSE     ");
       // -----------------------------------------проверка на конец заданий--------------------------------------------
       for (byte n = 0; n < PUPM_AMOUNT; n++) {                                    // пробегаем по всем помпам
         if   (!pump_finished[n] && pumping_time[n] > 0)                           // если нашли не политую - выходим                     
