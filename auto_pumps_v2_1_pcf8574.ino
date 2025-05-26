@@ -240,6 +240,8 @@ void flowTick() {                                                               
       lcd.print("          ");
       // -----------------------------------------проверка на конец заданий--------------------------------------------
       for (byte n = 0; n < PUPM_AMOUNT; n++) {                                    // пробегаем по всем помпам
+        if   (!pump_finished[n] && pumping_time[n] > 0)                           
+          break;
         if ((n == PUPM_AMOUNT -1)                                                 // если неполитых зон не осталоь
           && ((pump_finished[n] && pumping_time[n] > 0)
           || pumping_time[n] == 0)) {
