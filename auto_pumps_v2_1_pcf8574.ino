@@ -96,7 +96,7 @@ uint32_t backlTimer;
 
 int8_t thisH, thisM, thisS;
 long thisPeriod;
-boolean dryState = true;   // какой клапан открыт. true - dry(грязная) false - чистая
+boolean dryState = false;   // какой клапан открыт. true - dry(грязная) false - чистая
 
 
 
@@ -189,12 +189,15 @@ void periodTick() {
   for (byte i = 0; i < PUPM_AMOUNT; i++) {            // пробегаем по всем помпам
     if (period_time[i] > 0
          && pumping_time[i] > 0                       // если общее время полива зоны ноль - пропускаем зону
-         && millis() - pump_timers[i] >= period_time[i] * 1000
+        //  && millis() - pump_timers[i] >= period_time[i] * 1000 
+        // если раскоментить то задания запускаются не по порядку,а в зависимости от времени грязой воды
+        // меньше время - быстрее старт(можно реализовать приоритет зон)
          && (pump_state[i] != SWITCH_LEVEL)
          &&  !pump_finished[i]                        // если зона уже поливалась - пропускаем 
          && !(now_pumping * !PARALLEL)) {
       pump_state[i] = SWITCH_LEVEL;
-      digitalWrite(PUMP_PIN, SWITCH_LEVEL);           // включить грязную воду
+      if (!dryState)
+          digitalWrite(PUMP_PIN, SWITCH_LEVEL);       // включить грязную воду
       dryState = true;                                // флаг грязной воды поднять
       if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], SWITCH_LEVEL);
       else                  pcf8574_b.digitalWrite(pump_pins[i] - 8, SWITCH_LEVEL);
@@ -202,9 +205,6 @@ void periodTick() {
       now_pumping = true;
       lcd.setCursor(10, 0);                           // вывод текущей операции на экран
       lcd.print("1-H20  #" + String(i + 1));
-      // Serial.println("dry clapan ON");
-      //Serial.println("clear clapan" + " OFF");
-      // Serial.println("Pump #" + String(i) + " ON");
     }
     // переключение воды с грязной на чистую
      if (period_time[i] > 0                          // если помпа качает и счетчик больше чем period_time
@@ -213,11 +213,11 @@ void periodTick() {
          && (dryState)) {
       digitalWrite(PUMP_PIN, !SWITCH_LEVEL);         // выключить грязную воду
       dryState = false;                              // флаг грязной воды снять
-      digitalWrite(PUMP_PIN1, SWITCH_LEVEL);         // включить чистую воду
-      lcd.setCursor(10, 0);                          // вывод текущей операции на экран
-      lcd.print("2-H20  #" + String(i + 1));
-      // Serial.println("dry clapan OFF");
-      // Serial.println("clear clapan ON");
+      if (period_time[i] < pumping_time[i]) {        // если время грязной воды меньше времени полива
+          digitalWrite(PUMP_PIN1, SWITCH_LEVEL);     // включить чистую воду
+          lcd.setCursor(10, 0);                      // вывод текущей операции на экран
+          lcd.print("2-H20  #" + String(i + 1));
+      }
     }
     // добавлено к гайверу
   }
