@@ -205,16 +205,15 @@ void periodTick() {
       lcd.print("1-H20  #" + String(i + 1));
     }
     // переключение воды с грязной на чистую
-    if (period_time[i] > 0  // если помпа качает и счетчик больше чем period_time
-        && millis() - pump_timers[i] >= period_time[i] * 1000
-        && (pump_state[i] == SWITCH_LEVEL)
-        && (dryState)) {
-      dryState = false;                         // флаг грязной воды снять
-      if (period_time[i] < pumping_time[i]) {   // если время грязной воды меньше времени полива
-        digitalWrite(PUMP_PIN1, SWITCH_LEVEL);  // включить чистую воду
-        lcd.setCursor(10, 0);                   // вывод текущей операции на экран
-        lcd.print("2-H20  #" + String(i + 1));
-      }
+    if (period_time[i] > 0                                     // если счетчик больше чем period_time
+        && millis() - pump_timers[i] >= period_time[i] * 1000  // если время полива грязной вышло
+        && (pump_state[i] == SWITCH_LEVEL)                     // если помпа качает
+        && period_time[i] < pumping_time[i]                    // если время грязной воды меньше времени полива
+        && (dryState)) {                                       // если включена грязная
+      dryState = false;                                        // флаг грязной воды снять
+      digitalWrite(PUMP_PIN1, SWITCH_LEVEL);                   // включить чистую воду
+      lcd.setCursor(10, 0);                                    // вывод текущей операции на экран
+      lcd.print("2-H20  #" + String(i + 1));
     }
     // добавлено к гайверу
   }
