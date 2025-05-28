@@ -186,9 +186,9 @@ void backlOn() {
 }
 void periodTick() {
   for (byte i = 0; i < PUPM_AMOUNT; i++) {                                       // пробегаем по всем помпам
+    if (millis() - zoneTimer < ZONE_TOUT * 1000) break;                          // если пауза не закончилась - выход из цикла
     if (period_time[i] > 0                                                       // если грязная вода не ноль
         && pumping_time[i] > 0                                                   // если общее время полива зоны не ноль
-        && millis() - zoneTimer >= ZONE_TOUT * 1000                              // если пауза закончилась
         && !pump_finished[i]                                                     // если зона еще не поливалась
         && !now_pumping) {                                                       // если никакая зона не включена
       pump_state[i] = SWITCH_LEVEL;                                              // зона поливается в данный момент
@@ -206,7 +206,7 @@ void periodTick() {
     // ------------------переключение воды с грязной на чистую
     if (period_time[i] > 0                                     // если счетчик больше чем period_time
         && millis() - pump_timers[i] >= period_time[i] * 1000  // если время полива грязной вышло
-        && (pump_state[i] == SWITCH_LEVEL)                     // если зона поливается в данный момент
+        && pump_state[i] == SWITCH_LEVEL                       // если зона поливается в данный момент
         && period_time[i] < pumping_time[i]                    // если время грязной воды меньше времени полива
         && (dryState)) {                                       // если включена грязная
       dryState = false;                                        // флаг грязной воды снять
