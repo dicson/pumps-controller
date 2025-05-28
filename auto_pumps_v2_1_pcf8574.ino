@@ -189,7 +189,7 @@ void periodTick() {
     if (period_time[i] > 0                           // если грязная вода не ноль
         && pumping_time[i] > 0                       // если общее время полива зоны не ноль
         && millis() - zoneTimer >= ZONE_TOUT * 1000  // если пауза закончилась
-        && (pump_state[i] != SWITCH_LEVEL)           // если зона не поливается
+        && (pump_state[i] != SWITCH_LEVEL)           // если зона не поливается в данный момент
         && !pump_finished[i]                         // если зона еще не поливалась
         && !now_pumping) {                           // если никакая зона не включена
       pump_state[i] = SWITCH_LEVEL;
@@ -258,6 +258,8 @@ void flowTick() {                           // выключение зоны
 void encoderTick() {
   enc1.tick();                                // отработка энкодера
   if (enc1.isDouble()) {                      // двойной клик
+    backlTimer = millis();                    // сбросить таймаут дисплея
+    backlOn();                                // включить дисплей
     zoneTimer = millis() - ZONE_TOUT * 1000;  // убираем паузу перед запуском полива
     digitalWrite(WATER_PUMP, SWITCH_LEVEL);   // включить насос
     for (byte i = 0; i < PUPM_AMOUNT; i++) {  // пробегаем по всем помпам
