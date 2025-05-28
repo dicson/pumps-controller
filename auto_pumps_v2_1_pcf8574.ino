@@ -31,7 +31,6 @@
 
 #define WATER_PUMP 4  // это реле, ведущее на насос
 #define PUMP_PIN1 5   // это реле, ведущее на чистую воду помпу
-#define ZONE_TOUT 1   // таймаут между поливом зон, секунды
 
 
 // названия каналов управления. БУКВУ L НЕ ТРОГАТЬ БЛЕТ!!!!!!
@@ -52,6 +51,7 @@ static const wchar_t *relayNames[] = {
   L"Зона 14",
   L"Зона 15",
   L"Зона 16",
+  L"PAUSE",
 };
 
 #define CLK 3
@@ -80,9 +80,9 @@ LCD_1602_RUS lcd(0x3f, 20, 4);
 // -------- АВТОВЫБОР ОПРЕДЕЛЕНИЯ ДИСПЛЕЯ-------------
 
 uint32_t pump_timers[PUPM_AMOUNT];
-uint32_t pumping_time[PUPM_AMOUNT];
-uint32_t period_time[PUPM_AMOUNT];
-boolean pump_state[PUPM_AMOUNT];
+uint32_t pumping_time[PUPM_AMOUNT + 1];
+uint32_t period_time[PUPM_AMOUNT + 1];
+boolean pump_state[PUPM_AMOUNT + 1];
 byte pump_pins[PUPM_AMOUNT];
 boolean pump_finished[PUPM_AMOUNT];  // зона уже полита
 
@@ -102,9 +102,9 @@ boolean dryState = true;  // какой клапан открыт. true - dry(г
 
 void setup() {
   // --------------------- КОНФИГУРИРУЕМ ПИНЫ ---------------------
-  for (byte i = 0; i < PUPM_AMOUNT; i++) {  // пробегаем по всем помпам
-    pump_pins[i] = START_PIN + i;           // настраиваем массив пинов
-    if (pump_pins[i] < 8) {
+  for (byte i = 0; i <= PUPM_AMOUNT; i++) {      // пробегаем по всем помпам
+    pump_pins[i] = START_PIN + i;                // настраиваем массив пинов
+    if (pump_pins[i] < 8) {                      //
       pcf8574_a.pinMode(START_PIN + i, OUTPUT);  // настраиваем пины
       pcf8574_a.digitalWrite(START_PIN + i, !SWITCH_LEVEL);
     } else {
@@ -152,7 +152,7 @@ void setup() {
     }
   }
 
-  for (byte i = 0; i < PUPM_AMOUNT; i++) {         // пробегаем по всем помпам
+  for (byte i = 0; i <= PUPM_AMOUNT; i++) {        // пробегаем по всем помпам
     period_time[i] = EEPROM.readLong(8 * i);       // читаем данные из памяти. На чётных - период (ч)
     pumping_time[i] = EEPROM.readLong(8 * i + 4);  // на нечётных - полив (с)
     if (SWITCH_LEVEL)                              // вырубить все помпы
@@ -186,7 +186,7 @@ void backlOn() {
 }
 void periodTick() {
   for (byte i = 0; i < PUPM_AMOUNT; i++) {                                       // пробегаем по всем помпам
-    if (millis() - zoneTimer < ZONE_TOUT * 1000) break;                          // если пауза не закончилась - выход из цикла
+    if (millis() - zoneTimer < period_time[16] * 1000) break;                    // если пауза не закончилась - выход из цикла
     if (period_time[i] > 0                                                       // если грязная вода не ноль
         && pumping_time[i] > 0                                                   // если общее время полива зоны не ноль
         && !pump_finished[i]                                                     // если зона еще не поливалась
@@ -258,14 +258,14 @@ void flowTick() {                                                 // выклю�
 */
 
 void encoderTick() {
-  enc1.tick();                                // отработка энкодера
-  if (enc1.isDouble()) {                      // двойной клик
-    backlTimer = millis();                    // сбросить таймаут дисплея
-    backlOn();                                // включить дисплей
-    zoneTimer = millis() - ZONE_TOUT * 1000;  // убираем паузу перед запуском полива
-    digitalWrite(WATER_PUMP, SWITCH_LEVEL);   // включить насос
-    for (byte i = 0; i < PUPM_AMOUNT; i++) {  // пробегаем по всем помпам
-      pump_finished[i] = false;               // сброс переменных политых зон(старт полива)
+  enc1.tick();                                      // отработка энкодера
+  if (enc1.isDouble()) {                            // двойной клик
+    backlTimer = millis();                          // сбросить таймаут дисплея
+    backlOn();                                      // включить дисплей
+    zoneTimer = millis() - period_time[16] * 1000;  // убираем паузу перед запуском полива
+    digitalWrite(WATER_PUMP, SWITCH_LEVEL);         // включить насос
+    for (byte i = 0; i < PUPM_AMOUNT; i++) {        // пробегаем по всем помпам
+      pump_finished[i] = false;                     // сброс переменных политых зон(старт полива)
     }
   }
   if (enc1.isTurn()) {  // если был совершён поворот
@@ -293,7 +293,13 @@ void encoderTick() {
 void changeSettings(int increment) {
   if (current_set == 0) {
     current_pump += increment;
-    if (current_pump > PUPM_AMOUNT - 1) current_pump = PUPM_AMOUNT - 1;
+    if (current_pump > PUPM_AMOUNT) {  // если попали на настройку паузы
+      current_pump = PUPM_AMOUNT;
+      lcd.setCursor(1, 0);
+      lcd.print("         ");
+      lcd.setCursor(1, 0);
+      lcd.print("PAUSE");
+    }
     if (current_pump < 0) current_pump = 0;
     s_to_hms(period_time[current_pump]);
     drawLabels();
@@ -367,11 +373,21 @@ void changeSet() {
   }
   lcd.setCursor(0, 1);
   if (current_set < 4) {
-    lcd.print(L"г.ВОДА");
-    s_to_hms(period_time[current_pump]);
+    if (current_pump < PUPM_AMOUNT) {  // настройка зон
+      lcd.print(L"г.ВОДА");
+      s_to_hms(period_time[current_pump]);
+    } else {  // настройка паузы
+      lcd.print(L"TIME  ");
+      s_to_hms(period_time[current_pump]);
+    }
   } else {
-    lcd.print(L"ПОЛИВ ");
-    s_to_hms(pumping_time[current_pump]);
+    if (current_pump < PUPM_AMOUNT) {  // настройка зон
+      lcd.print(L"ПОЛИВ ");
+      s_to_hms(pumping_time[current_pump]);
+    } else {  // настройка паузы
+      lcd.print(L"----- ");
+      s_to_hms(pumping_time[current_pump]);
+    }
   }
   lcd.setCursor(8, 1);
   if (thisH < 10) lcd.print(0);
