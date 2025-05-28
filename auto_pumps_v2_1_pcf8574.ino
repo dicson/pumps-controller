@@ -119,7 +119,7 @@ void setup() {
   digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);  // выключаем от греха реле переключения воды
 
   // --------------------- ИНИЦИАЛИЗИРУЕМ ЖЕЛЕЗО ---------------------
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   lcd.init();
   lcd.backlight();
