@@ -185,29 +185,28 @@ void backlOn() {
   lcd.backlight();
 }
 void periodTick() {
-  for (byte i = 0; i < PUPM_AMOUNT; i++) {           // пробегаем по всем помпам
-    if (period_time[i] > 0                           // если грязная вода не ноль
-        && pumping_time[i] > 0                       // если общее время полива зоны не ноль
-        && millis() - zoneTimer >= ZONE_TOUT * 1000  // если пауза закончилась
-        && (pump_state[i] != SWITCH_LEVEL)           // если зона не поливается в данный момент
-        && !pump_finished[i]                         // если зона еще не поливалась
-        && !now_pumping) {                           // если никакая зона не включена
-      pump_state[i] = SWITCH_LEVEL;
-      if (!dryState) {
-        digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);  // включить грязную воду
-        dryState = true;                         // флаг грязной воды поднять
-      }
-      if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], SWITCH_LEVEL);
-      else pcf8574_b.digitalWrite(pump_pins[i] - 8, SWITCH_LEVEL);
-      pump_timers[i] = millis();
-      now_pumping = true;
-      lcd.setCursor(10, 0);  // вывод текущей операции на экран
+  for (byte i = 0; i < PUPM_AMOUNT; i++) {                                       // пробегаем по всем помпам
+    if (period_time[i] > 0                                                       // если грязная вода не ноль
+        && pumping_time[i] > 0                                                   // если общее время полива зоны не ноль
+        && millis() - zoneTimer >= ZONE_TOUT * 1000                              // если пауза закончилась
+        && !pump_finished[i]                                                     // если зона еще не поливалась
+        && !now_pumping) {                                                       // если никакая зона не включена
+      pump_state[i] = SWITCH_LEVEL;                                              // зона поливается в данный момент
+      pump_timers[i] = millis();                                                 // сброс счетчика полива зоны
+      now_pumping = true;                                                        // идет полив
+      if (!dryState) {                                                           // если включена чистая вода
+        digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);                                  // включить грязную воду
+        dryState = true;                                                         // флаг грязной воды поднять
+      }                                                                          //
+      if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], SWITCH_LEVEL);  // включить зону
+      else pcf8574_b.digitalWrite(pump_pins[i] - 8, SWITCH_LEVEL);               //
+      lcd.setCursor(10, 0);                                                      // вывод текущей операции на экран
       lcd.print("1-H20  #" + String(i + 1));
     }
-    // переключение воды с грязной на чистую
+    // ------------------переключение воды с грязной на чистую
     if (period_time[i] > 0                                     // если счетчик больше чем period_time
         && millis() - pump_timers[i] >= period_time[i] * 1000  // если время полива грязной вышло
-        && (pump_state[i] == SWITCH_LEVEL)                     // если помпа качает
+        && (pump_state[i] == SWITCH_LEVEL)                     // если зона поливается в данный момент
         && period_time[i] < pumping_time[i]                    // если время грязной воды меньше времени полива
         && (dryState)) {                                       // если включена грязная
       dryState = false;                                        // флаг грязной воды снять
@@ -215,35 +214,36 @@ void periodTick() {
       lcd.setCursor(10, 0);                                    // вывод текущей операции на экран
       lcd.print("2-H20  #" + String(i + 1));
     }
-    // добавлено к гайверу
   }
 }
 
-void flowTick() {                           // выключение зоны
-  for (byte i = 0; i < PUPM_AMOUNT; i++) {  // пробегаем по всем помпам
-    if (pumping_time[i] > 0
-        && millis() - pump_timers[i] >= pumping_time[i] * 1000
-        && (pump_state[i] == SWITCH_LEVEL)) {
-      pump_state[i] = !SWITCH_LEVEL;
-      if (!dryState) {                           // если включена грязная
-        digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);  // выключить чистую воду
-        dryState = true;                        // флаг грязной воды поднять
-      }
-      if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], !SWITCH_LEVEL);  // выключить зону
-      else pcf8574_b.digitalWrite(pump_pins[i] - 8, !SWITCH_LEVEL);
-      now_pumping = false;
-      zoneTimer = millis();     // обнуляем таймер паузы между зонами
-      pump_finished[i] = true;  // зона помечается политой
-      lcd.setCursor(10, 0);     // очистка текущей операции на экране
+void flowTick() {                                                 // выключение зоны
+  for (byte i = 0; i < PUPM_AMOUNT; i++) {                        // пробегаем по всем помпам
+    if (pumping_time[i] > 0                                       // если время полива больше нуля
+        && millis() - pump_timers[i] >= pumping_time[i] * 1000    // если время полива вышло
+        && pump_state[i] == SWITCH_LEVEL) {                       // если зона поливается в данный момент
+      pump_state[i] = !SWITCH_LEVEL;                              // зона не поливается в данный момент
+      if (!dryState) {                                            // если включена грязная
+        digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);                   // выключить чистую воду
+        dryState = true;                                          // флаг грязной воды поднять
+      }                                                           //
+      if (pump_pins[i] < 8) {                                     // выключить зону
+        pcf8574_a.digitalWrite(pump_pins[i], !SWITCH_LEVEL);      //
+      } else                                                      //
+        pcf8574_b.digitalWrite(pump_pins[i] - 8, !SWITCH_LEVEL);  //
+      now_pumping = false;                                        // полив остановлен
+      zoneTimer = millis();                                       // обнуляем таймер паузы между зонами
+      pump_finished[i] = true;                                    // зона помечается политой
+      lcd.setCursor(10, 0);                                       // очистка текущей операции на экране
       lcd.print("PAUSE     ");
       // -----------------------------------------проверка на конец заданий--------------------------------------------
       for (byte n = 0; n < PUPM_AMOUNT; n++) {         // пробегаем по всем помпам
         if (!pump_finished[n] && pumping_time[n] > 0)  // если нашли не политую - выходим
-          break;
-        if (n == PUPM_AMOUNT - 1) {  // если проверили весь список и  не нашли не политых
-          lcd.setCursor(10, 0);      // вывод сообщения на экран
-          lcd.print("Finished  ");
-          digitalWrite(WATER_PUMP, !SWITCH_LEVEL);  // выключить насос
+          break;                                       //
+        if (n == PUPM_AMOUNT - 1) {                    // если проверили весь список и  не нашли не политых
+          lcd.setCursor(10, 0);                        // вывод сообщения на экран
+          lcd.print("Finished  ");                     //
+          digitalWrite(WATER_PUMP, !SWITCH_LEVEL);     // выключить насос
         }
       }
       // ---------------------------------------------------------------------------------------------------------------
