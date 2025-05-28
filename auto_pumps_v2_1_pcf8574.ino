@@ -96,7 +96,7 @@ uint32_t zoneTimer;
 
 int8_t thisH, thisM, thisS;
 long thisPeriod;
-boolean dryState = false;  // какой клапан открыт. true - dry(грязная) false - чистая
+boolean dryState = true;  // какой клапан открыт. true - dry(грязная) false - чистая
 
 
 
