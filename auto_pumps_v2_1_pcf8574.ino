@@ -225,8 +225,10 @@ void flowTick() {                           // выключение зоны
         && millis() - pump_timers[i] >= pumping_time[i] * 1000
         && (pump_state[i] == SWITCH_LEVEL)) {
       pump_state[i] = !SWITCH_LEVEL;
-      digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);                                     // выключить чистую воду
-      dryState = false;                                                           // флаг грязной воды снять
+      if (!dryState) {                           // если включена грязная
+        digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);  // выключить чистую воду
+        dryState = true;                        // флаг грязной воды поднять
+      }
       if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], !SWITCH_LEVEL);  // выключить зону
       else pcf8574_b.digitalWrite(pump_pins[i] - 8, !SWITCH_LEVEL);
       now_pumping = false;
