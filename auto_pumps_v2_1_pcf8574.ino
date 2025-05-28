@@ -226,12 +226,13 @@ void flowTick() {                           // выключение зоны
         && (pump_state[i] == SWITCH_LEVEL)) {
       pump_state[i] = !SWITCH_LEVEL;
       digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);                                     // выключить чистую воду
+      dryState = false;                                                           // флаг грязной воды снять
       if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], !SWITCH_LEVEL);  // выключить зону
       else pcf8574_b.digitalWrite(pump_pins[i] - 8, !SWITCH_LEVEL);
       now_pumping = false;
-      zoneTimer = millis();  // обнуляем таймер паузы между зонами
-      pump_finished[i] = true;
-      lcd.setCursor(10, 0);  // очистка текущей операции на экране
+      zoneTimer = millis();     // обнуляем таймер паузы между зонами
+      pump_finished[i] = true;  // зона помечается политой
+      lcd.setCursor(10, 0);     // очистка текущей операции на экране
       lcd.print("PAUSE     ");
       // -----------------------------------------проверка на конец заданий--------------------------------------------
       for (byte n = 0; n < PUPM_AMOUNT; n++) {         // пробегаем по всем помпам
