@@ -214,6 +214,10 @@ void periodTick() {
       digitalWrite(PUMP_PIN1, SWITCH_LEVEL);                   // включить чистую воду
       lcd.setCursor(10, 0);                                    // вывод текущей операции на экран
       lcd.print("2-H20  #" + String(i + 1));
+      // ------------------ костыль
+      //delay(50);
+      if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], SWITCH_LEVEL);  // включить зону
+      else pcf8574_b.digitalWrite(pump_pins[i] - 8, SWITCH_LEVEL);               //
     }
   }
 }
