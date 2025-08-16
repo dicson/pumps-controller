@@ -197,10 +197,11 @@ void periodTick() {
         digitalWrite(PUMP_PIN1, !SWITCH_LEVEL);                // включить грязную воду
         dryState = true;                                       // флаг грязной воды поднять
       }  //
-      if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], SWITCH_LEVEL);  // включить зону
-      else pcf8574_b.digitalWrite(pump_pins[i] - 8, SWITCH_LEVEL);               //
+
       if (period_time[16] > 0)                                                   // если есть пауза между зонами -
         digitalWrite(WATER_PUMP, SWITCH_LEVEL);                                  // включить насос
+      if (pump_pins[i] < 8) pcf8574_a.digitalWrite(pump_pins[i], SWITCH_LEVEL);  // включить зону
+      else pcf8574_b.digitalWrite(pump_pins[i] - 8, SWITCH_LEVEL);               //
       lcd.setCursor(10, 0);                                                      // вывод текущей операции на экран
       lcd.print("1-H20  #" + String(i + 1));
     }
