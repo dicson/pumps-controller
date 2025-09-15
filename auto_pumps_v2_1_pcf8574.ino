@@ -371,11 +371,6 @@ void changeSet() {
     case 0:
       drawArrow(0, 0);
       update_EEPROM();
-      lcd.setCursor(current_pump, 3);      // изменяем индикатор заданий
-      if (pumping_time[current_pump] > 0)  // если время полива зоны больше нуля
-        lcd.print("0");
-      else
-        lcd.print("*");
       break;
     case 1:
       drawArrow(7, 1);
